@@ -1,0 +1,48 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/s0und-playback-modes
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: flutter doctor -v
+      - run: flutter pub get
+      - run: dart run build_runner build
+      - name: Verify generated files are current
+        run: git diff --exit-code
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build ios --release --no-codesign
+      - name: Package and inspect IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d build/ios/iphoneos/Runner.app
+          rm -rf build/ios/ipa-payload
+          mkdir -p build/ios/ipa-payload/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ios/ipa-payload/Payload/
+          (cd build/ios/ipa-payload && zip -qry ../Frosty-S0und-Test.ipa Payload)
+          unzip -l build/ios/Frosty-S0und-Test.ipa | tee build/ios/ipa-contents.txt
+          grep -q 'Payload/Runner.app/' build/ios/ipa-contents.txt
+          plutil -p build/ios/ipa-payload/Payload/Runner.app/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' build/ios/ipa-payload/Payload/Runner.app/Info.plist)" = 'com.local.frostys0und'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' build/ios/ipa-payload/Payload/Runner.app/Info.plist)" = 'Frosty S0und Test'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Frosty-S0und-Test
+          path: build/ios/Frosty-S0und-Test.ipa
+          if-no-files-found: error
+          retention-days: 14
