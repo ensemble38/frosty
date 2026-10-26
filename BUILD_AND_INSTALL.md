@@ -36,6 +36,13 @@ If direct installation fails, save the complete iLoader log from **View Logs** o
 `%APPDATA%\me.nabdev.iloader\logs` before changing anything. SideStore setup through iLoader is
 the second-choice path after diagnosing direct USB installation.
 
+### iOS 27 note (checked 2026-10-26)
+
+iLoader 2.4.0 is the latest official release. Direct USB IPA import is still the first path on
+iOS 27; wireless pairing is not required. Current issue reports show that provisioning-profile
+errors can still affect individual free accounts, and SideStore has had separate iOS 27 launch
+issues. Capture the exact direct-install error before trying SideStore.
+
 ## Test and update
 
 Open one live channel in Frosty mode, then switch to S0und Token and S0und Full. Each mode change
