@@ -302,6 +302,8 @@ void main() {
         'oauth': 'OAUTH_SECRET_789',
         'cookie': 'COOKIE_SECRET_000',
         'channel': 'example',
+        'error':
+            'request https://usher.test/live.m3u8?token=URL_TOKEN&sig=URL_SIGNATURE failed',
       });
 
       expect(store.playbackDebugLog, contains('token_present=true'));
@@ -311,6 +313,9 @@ void main() {
       expect(store.playbackDebugLog, isNot(contains('SIGNATURE_SECRET_456')));
       expect(store.playbackDebugLog, isNot(contains('OAUTH_SECRET_789')));
       expect(store.playbackDebugLog, isNot(contains('COOKIE_SECRET_000')));
+      expect(store.playbackDebugLog, isNot(contains('URL_TOKEN')));
+      expect(store.playbackDebugLog, isNot(contains('URL_SIGNATURE')));
+      expect(store.playbackDebugLog, contains('token=[redacted]'));
     });
 
     test('runtime diagnostics are not persisted', () {

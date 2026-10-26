@@ -133,15 +133,12 @@ abstract class _SettingsStoreBase with Store {
     final safe = <String>[];
     for (final entry in fields.entries) {
       final key = entry.key.toLowerCase();
-      if (key == 'token' ||
-          key == 'signature' ||
-          key == 'oauth' ||
-          key == 'cookie') {
+      if (_playbackSecretKey.hasMatch(key)) {
         final value = entry.value?.toString();
         safe.add('${entry.key}_present=${value?.isNotEmpty == true}');
         safe.add('${entry.key}_length=${value?.length ?? 0}');
       } else {
-        safe.add('${entry.key}=${entry.value}');
+        safe.add('${entry.key}=${_redactPlaybackSecrets(entry.value)}');
       }
     }
     final line =
@@ -155,6 +152,27 @@ abstract class _SettingsStoreBase with Store {
       playbackDebugLog = lines.sublist(lines.length - 200).join('\n');
     }
   }
+
+  static final _playbackSecretKey = RegExp(
+    r'(token|signature|oauth|cookie|authorization|secret)',
+    caseSensitive: false,
+  );
+
+  static final _playbackSecretValue = RegExp(
+    r'(token|sig|signature|oauth|cookie|authorization|secret)(=|%3[dD])([^&\s]+)',
+    caseSensitive: false,
+  );
+
+  String _redactPlaybackSecrets(Object? value) => value
+      .toString()
+      .replaceAllMapped(
+        _playbackSecretValue,
+        (match) => '${match.group(1)}${match.group(2)}[redacted]',
+      )
+      .replaceAll(
+        RegExp(r'OAuth\s+\S+', caseSensitive: false),
+        'OAuth [redacted]',
+      );
 
   /// 5.2.0 made native the default. 5.1.0 already wrote
   /// `useNativePlayer: false` into saved settings, so a Dart default
