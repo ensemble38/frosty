@@ -24,6 +24,13 @@ SettingsStore _$SettingsStoreFromJson(
   ..defaultToHighestQuality = json['defaultToHighestQuality'] as bool? ?? false
   ..useTextureRendering = json['useTextureRendering'] as bool? ?? true
   ..useNativePlayer = json['useNativePlayer'] as bool? ?? true
+  ..playbackMode =
+      $enumDecodeNullable(
+        _$PlaybackModeEnumMap,
+        json['playbackMode'],
+        unknownValue: PlaybackMode.frosty,
+      ) ??
+      PlaybackMode.frosty
   ..nativePlayerV52Migrated = json['nativePlayerV52Migrated'] as bool? ?? false
   ..showOverlay = json['showOverlay'] as bool? ?? true
   ..toggleableOverlay = json['toggleableOverlay'] as bool? ?? false
@@ -107,6 +114,7 @@ Map<String, dynamic> _$SettingsStoreToJson(
   'defaultToHighestQuality': instance.defaultToHighestQuality,
   'useTextureRendering': instance.useTextureRendering,
   'useNativePlayer': instance.useNativePlayer,
+  'playbackMode': _$PlaybackModeEnumMap[instance.playbackMode]!,
   'nativePlayerV52Migrated': instance.nativePlayerV52Migrated,
   'showOverlay': instance.showOverlay,
   'toggleableOverlay': instance.toggleableOverlay,
@@ -155,6 +163,12 @@ const _$ThemeTypeEnumMap = {
   ThemeType.system: 'system',
   ThemeType.light: 'light',
   ThemeType.dark: 'dark',
+};
+
+const _$PlaybackModeEnumMap = {
+  PlaybackMode.frosty: 'frosty',
+  PlaybackMode.s0undToken: 's0undToken',
+  PlaybackMode.s0undFull: 's0undFull',
 };
 
 const _$TimestampTypeEnumMap = {
@@ -350,6 +364,174 @@ mixin _$SettingsStore on _SettingsStoreBase, Store {
     _$useNativePlayerAtom.reportWrite(value, super.useNativePlayer, () {
       super.useNativePlayer = value;
     });
+  }
+
+  late final _$playbackModeAtom = Atom(
+    name: '_SettingsStoreBase.playbackMode',
+    context: context,
+  );
+
+  @override
+  PlaybackMode get playbackMode {
+    _$playbackModeAtom.reportRead();
+    return super.playbackMode;
+  }
+
+  @override
+  set playbackMode(PlaybackMode value) {
+    _$playbackModeAtom.reportWrite(value, super.playbackMode, () {
+      super.playbackMode = value;
+    });
+  }
+
+  late final _$playbackDebugLogAtom = Atom(
+    name: '_SettingsStoreBase.playbackDebugLog',
+    context: context,
+  );
+
+  @override
+  String get playbackDebugLog {
+    _$playbackDebugLogAtom.reportRead();
+    return super.playbackDebugLog;
+  }
+
+  @override
+  set playbackDebugLog(String value) {
+    _$playbackDebugLogAtom.reportWrite(value, super.playbackDebugLog, () {
+      super.playbackDebugLog = value;
+    });
+  }
+
+  late final _$playbackDebugLastChannelAtom = Atom(
+    name: '_SettingsStoreBase.playbackDebugLastChannel',
+    context: context,
+  );
+
+  @override
+  String get playbackDebugLastChannel {
+    _$playbackDebugLastChannelAtom.reportRead();
+    return super.playbackDebugLastChannel;
+  }
+
+  @override
+  set playbackDebugLastChannel(String value) {
+    _$playbackDebugLastChannelAtom.reportWrite(
+      value,
+      super.playbackDebugLastChannel,
+      () {
+        super.playbackDebugLastChannel = value;
+      },
+    );
+  }
+
+  late final _$playbackDebugTokenParamsAtom = Atom(
+    name: '_SettingsStoreBase.playbackDebugTokenParams',
+    context: context,
+  );
+
+  @override
+  String get playbackDebugTokenParams {
+    _$playbackDebugTokenParamsAtom.reportRead();
+    return super.playbackDebugTokenParams;
+  }
+
+  @override
+  set playbackDebugTokenParams(String value) {
+    _$playbackDebugTokenParamsAtom.reportWrite(
+      value,
+      super.playbackDebugTokenParams,
+      () {
+        super.playbackDebugTokenParams = value;
+      },
+    );
+  }
+
+  late final _$playbackDebugUsherModeAtom = Atom(
+    name: '_SettingsStoreBase.playbackDebugUsherMode',
+    context: context,
+  );
+
+  @override
+  String get playbackDebugUsherMode {
+    _$playbackDebugUsherModeAtom.reportRead();
+    return super.playbackDebugUsherMode;
+  }
+
+  @override
+  set playbackDebugUsherMode(String value) {
+    _$playbackDebugUsherModeAtom.reportWrite(
+      value,
+      super.playbackDebugUsherMode,
+      () {
+        super.playbackDebugUsherMode = value;
+      },
+    );
+  }
+
+  late final _$playbackDebugHttpStatusAtom = Atom(
+    name: '_SettingsStoreBase.playbackDebugHttpStatus',
+    context: context,
+  );
+
+  @override
+  String get playbackDebugHttpStatus {
+    _$playbackDebugHttpStatusAtom.reportRead();
+    return super.playbackDebugHttpStatus;
+  }
+
+  @override
+  set playbackDebugHttpStatus(String value) {
+    _$playbackDebugHttpStatusAtom.reportWrite(
+      value,
+      super.playbackDebugHttpStatus,
+      () {
+        super.playbackDebugHttpStatus = value;
+      },
+    );
+  }
+
+  late final _$playbackDebugStartResultAtom = Atom(
+    name: '_SettingsStoreBase.playbackDebugStartResult',
+    context: context,
+  );
+
+  @override
+  String get playbackDebugStartResult {
+    _$playbackDebugStartResultAtom.reportRead();
+    return super.playbackDebugStartResult;
+  }
+
+  @override
+  set playbackDebugStartResult(String value) {
+    _$playbackDebugStartResultAtom.reportWrite(
+      value,
+      super.playbackDebugStartResult,
+      () {
+        super.playbackDebugStartResult = value;
+      },
+    );
+  }
+
+  late final _$playbackDebugLastErrorAtom = Atom(
+    name: '_SettingsStoreBase.playbackDebugLastError',
+    context: context,
+  );
+
+  @override
+  String get playbackDebugLastError {
+    _$playbackDebugLastErrorAtom.reportRead();
+    return super.playbackDebugLastError;
+  }
+
+  @override
+  set playbackDebugLastError(String value) {
+    _$playbackDebugLastErrorAtom.reportWrite(
+      value,
+      super.playbackDebugLastError,
+      () {
+        super.playbackDebugLastError = value;
+      },
+    );
   }
 
   late final _$showOverlayAtom = Atom(
@@ -1162,6 +1344,18 @@ mixin _$SettingsStore on _SettingsStoreBase, Store {
   }
 
   @override
+  void recordPlaybackDebug(String event, Map<String, Object?> fields) {
+    final _$actionInfo = _$_SettingsStoreBaseActionController.startAction(
+      name: '_SettingsStoreBase.recordPlaybackDebug',
+    );
+    try {
+      return super.recordPlaybackDebug(event, fields);
+    } finally {
+      _$_SettingsStoreBaseActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
   void _migrateNativePlayerDefault() {
     final _$actionInfo = _$_SettingsStoreBaseActionController.startAction(
       name: '_SettingsStoreBase._migrateNativePlayerDefault',
@@ -1245,6 +1439,14 @@ showVideo: ${showVideo},
 defaultToHighestQuality: ${defaultToHighestQuality},
 useTextureRendering: ${useTextureRendering},
 useNativePlayer: ${useNativePlayer},
+playbackMode: ${playbackMode},
+playbackDebugLog: ${playbackDebugLog},
+playbackDebugLastChannel: ${playbackDebugLastChannel},
+playbackDebugTokenParams: ${playbackDebugTokenParams},
+playbackDebugUsherMode: ${playbackDebugUsherMode},
+playbackDebugHttpStatus: ${playbackDebugHttpStatus},
+playbackDebugStartResult: ${playbackDebugStartResult},
+playbackDebugLastError: ${playbackDebugLastError},
 showOverlay: ${showOverlay},
 toggleableOverlay: ${toggleableOverlay},
 showLatency: ${showLatency},

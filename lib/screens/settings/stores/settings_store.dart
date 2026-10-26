@@ -1,3 +1,4 @@
+import 'package:frosty/models/playback_mode.dart';
 import 'package:frosty/screens/channel/chat/stores/chat_tabs_store.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:mobx/mobx.dart';
@@ -69,6 +70,7 @@ abstract class _SettingsStoreBase with Store {
   static const defaultDefaultToHighestQuality = false;
   static const defaultUseTextureRendering = true;
   static const defaultUseNativePlayer = true;
+  static const defaultPlaybackMode = PlaybackMode.frosty;
 
   static const defaultShowOverlay = true;
   static const defaultToggleableOverlay = false;
@@ -90,6 +92,69 @@ abstract class _SettingsStoreBase with Store {
   @JsonKey(defaultValue: defaultUseNativePlayer)
   @observable
   var useNativePlayer = defaultUseNativePlayer;
+
+  @JsonKey(
+    defaultValue: defaultPlaybackMode,
+    unknownEnumValue: PlaybackMode.frosty,
+  )
+  @observable
+  var playbackMode = defaultPlaybackMode;
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @observable
+  var playbackDebugLog = '';
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @observable
+  var playbackDebugLastChannel = '—';
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @observable
+  var playbackDebugTokenParams = '—';
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @observable
+  var playbackDebugUsherMode = '—';
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @observable
+  var playbackDebugHttpStatus = '—';
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @observable
+  var playbackDebugStartResult = '—';
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @observable
+  var playbackDebugLastError = '—';
+
+  @action
+  void recordPlaybackDebug(String event, Map<String, Object?> fields) {
+    final safe = <String>[];
+    for (final entry in fields.entries) {
+      final key = entry.key.toLowerCase();
+      if (key == 'token' ||
+          key == 'signature' ||
+          key == 'oauth' ||
+          key == 'cookie') {
+        final value = entry.value?.toString();
+        safe.add('${entry.key}_present=${value?.isNotEmpty == true}');
+        safe.add('${entry.key}_length=${value?.length ?? 0}');
+      } else {
+        safe.add('${entry.key}=${entry.value}');
+      }
+    }
+    final line =
+        '${DateTime.now().toUtc().toIso8601String()} event=$event ${safe.join(' ')}'
+            .trimRight();
+    playbackDebugLog = playbackDebugLog.isEmpty
+        ? line
+        : '$playbackDebugLog\n$line';
+    final lines = playbackDebugLog.split('\n');
+    if (lines.length > 200) {
+      playbackDebugLog = lines.sublist(lines.length - 200).join('\n');
+    }
+  }
 
   /// 5.2.0 made native the default. 5.1.0 already wrote
   /// `useNativePlayer: false` into saved settings, so a Dart default
@@ -123,6 +188,7 @@ abstract class _SettingsStoreBase with Store {
     defaultToHighestQuality = defaultDefaultToHighestQuality;
     useTextureRendering = defaultUseTextureRendering;
     useNativePlayer = defaultUseNativePlayer;
+    playbackMode = defaultPlaybackMode;
 
     showOverlay = defaultShowOverlay;
     toggleableOverlay = defaultToggleableOverlay;
