@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frosty/models/playback_mode.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
 
 void main() {
@@ -15,6 +16,7 @@ void main() {
       expect(store.defaultToHighestQuality, isFalse);
       expect(store.useTextureRendering, isTrue);
       expect(store.useNativePlayer, isTrue);
+      expect(store.playbackMode, PlaybackMode.frosty);
       expect(store.showOverlay, isTrue);
       expect(store.toggleableOverlay, isFalse);
       expect(store.showLatency, isFalse);
@@ -68,6 +70,7 @@ void main() {
       store.chatDelay = 5.0;
       store.syncedChatDelay = 8.0;
       store.showVideo = false;
+      store.playbackMode = PlaybackMode.s0undFull;
       store.timestampType = TimestampType.twelve;
       store.landscapeCutout = LandscapeCutoutType.both;
       store.mutedWords = ['spam', 'bad'];
@@ -84,6 +87,7 @@ void main() {
       expect(restored.syncedChatDelay, 0.0);
       expect(json.containsKey('syncedChatDelay'), isFalse);
       expect(restored.showVideo, isFalse);
+      expect(restored.playbackMode, PlaybackMode.s0undFull);
       expect(restored.timestampType, TimestampType.twelve);
       expect(restored.landscapeCutout, LandscapeCutoutType.both);
       expect(restored.mutedWords, ['spam', 'bad']);
@@ -157,6 +161,7 @@ void main() {
       store.defaultToHighestQuality = true;
       store.useTextureRendering = false;
       store.useNativePlayer = false;
+      store.playbackMode = PlaybackMode.s0undToken;
       store.showOverlay = false;
       store.toggleableOverlay = true;
       store.showLatency = true;
@@ -167,6 +172,7 @@ void main() {
       expect(store.defaultToHighestQuality, isFalse);
       expect(store.useTextureRendering, isTrue);
       expect(store.useNativePlayer, isTrue);
+      expect(store.playbackMode, PlaybackMode.frosty);
       expect(store.showOverlay, isTrue);
       expect(store.toggleableOverlay, isFalse);
       expect(store.showLatency, isFalse);
@@ -284,6 +290,36 @@ void main() {
       store.autoSyncChatDelay = true;
 
       expect(store.effectiveChatDelay, 9.0);
+    });
+  });
+
+  group('playback diagnostics', () {
+    test('redacts token, signature, OAuth, and cookie values', () {
+      final store = SettingsStore.fromJson({});
+      store.recordPlaybackDebug('secret_test', {
+        'token': 'TOKEN_SECRET_123',
+        'signature': 'SIGNATURE_SECRET_456',
+        'oauth': 'OAUTH_SECRET_789',
+        'cookie': 'COOKIE_SECRET_000',
+        'channel': 'example',
+      });
+
+      expect(store.playbackDebugLog, contains('token_present=true'));
+      expect(store.playbackDebugLog, contains('signature_length=20'));
+      expect(store.playbackDebugLog, contains('channel=example'));
+      expect(store.playbackDebugLog, isNot(contains('TOKEN_SECRET_123')));
+      expect(store.playbackDebugLog, isNot(contains('SIGNATURE_SECRET_456')));
+      expect(store.playbackDebugLog, isNot(contains('OAUTH_SECRET_789')));
+      expect(store.playbackDebugLog, isNot(contains('COOKIE_SECRET_000')));
+    });
+
+    test('runtime diagnostics are not persisted', () {
+      final store = SettingsStore.fromJson({});
+      store.recordPlaybackDebug('test', {'channel': 'example'});
+
+      final json = store.toJson();
+      expect(json.containsKey('playbackDebugLog'), isFalse);
+      expect(json['playbackMode'], 'frosty');
     });
   });
 
