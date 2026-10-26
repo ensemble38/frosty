@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+    env:
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      SECRET: ${{ secrets.SECRET }}
     steps:
       - uses: actions/checkout@v6
       - uses: maxim-lobanov/setup-xcode@v1
@@ -25,7 +28,16 @@ jobs:
         run: git diff --exit-code
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build ios --release --no-codesign
+      - name: Verify Twitch build credentials are configured
+        shell: bash
+        run: |
+          test -n "$CLIENT_ID" || { echo '::error::CLIENT_ID secret is missing'; exit 1; }
+          test -n "$SECRET" || { echo '::error::SECRET secret is missing'; exit 1; }
+      - name: Build unsigned iOS app
+        run: >-
+          flutter build ios --release --no-codesign
+          --dart-define=CLIENT_ID="$CLIENT_ID"
+          --dart-define=SECRET="$SECRET"
       - name: Package and inspect IPA
         shell: bash
         run: |

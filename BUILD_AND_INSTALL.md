@@ -14,6 +14,10 @@ The **Build unsigned iOS IPA** workflow uses the Flutter version pinned in `pubs
 code generation, analysis and tests, builds without code signing, validates the IPA structure
 and bundle metadata, then uploads `Frosty-S0und-Test.ipa`.
 
+The fork must have repository Actions secrets named `CLIENT_ID` and `SECRET`. They are supplied
+to Flutter only as build-time defines and are never written to source control or build logs. The
+workflow fails before compiling if either secret is absent.
+
 ```powershell
 gh workflow run build-ios-ipa.yml --ref feature/s0und-playback-modes
 gh run list --workflow build-ios-ipa.yml
