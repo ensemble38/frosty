@@ -5,6 +5,22 @@ import 'package:flutter/foundation.dart';
 import 'package:frosty/apis/base_api_client.dart';
 import 'package:frosty/constants.dart';
 import 'package:frosty/models/playback_access_token.dart';
+import 'package:frosty/models/playback_mode.dart';
+
+class PlaylistProbeResult {
+  final int? statusCode;
+  final int variantCount;
+  final String? error;
+
+  const PlaylistProbeResult({
+    required this.statusCode,
+    required this.variantCount,
+    this.error,
+  });
+
+  bool get succeeded =>
+      statusCode != null && statusCode! >= 200 && statusCode! < 300;
+}
 
 /// Twitch GQL API client for fetching playback access tokens.
 ///
@@ -40,6 +56,7 @@ class TwitchGqlApi extends BaseApiClient {
   Future<PlaybackAccessToken> getPlaybackAccessToken({
     required String login,
     String? authToken,
+    PlaybackMode mode = PlaybackMode.frosty,
   }) async {
     final headers = <String, String>{
       'Client-ID': twitchGqlClientId,
@@ -52,8 +69,8 @@ class TwitchGqlApi extends BaseApiClient {
       'login': login,
       'isVod': false,
       'vodID': '',
-      'playerType': 'site',
-      'platform': 'web',
+      'playerType': mode.playerType,
+      'platform': mode.platform,
     };
 
     Future<JsonMap> query(Map<String, Object> body) =>
@@ -83,7 +100,7 @@ class TwitchGqlApi extends BaseApiClient {
         await query({
           'operationName': 'PlaybackAccessToken_Template',
           'query':
-              'query PlaybackAccessToken_Template(\$login: String!, \$isLive: Boolean!, \$vodID: ID!, \$isVod: Boolean!, \$playerType: String!) { streamPlaybackAccessToken(channelName: \$login, params: {platform: "web", playerBackend: "mediaplayer", playerType: \$playerType}) @include(if: \$isLive) { value signature __typename } videoPlaybackAccessToken(id: \$vodID, params: {platform: "web", playerBackend: "mediaplayer", playerType: \$playerType}) @include(if: \$isVod) { value signature __typename } }',
+              'query PlaybackAccessToken_Template(\$login: String!, \$isLive: Boolean!, \$vodID: ID!, \$isVod: Boolean!, \$playerType: String!, \$platform: String!) { streamPlaybackAccessToken(channelName: \$login, params: {platform: \$platform, playerBackend: "mediaplayer", playerType: \$playerType}) @include(if: \$isLive) { value signature __typename } videoPlaybackAccessToken(id: \$vodID, params: {platform: \$platform, playerBackend: "mediaplayer", playerType: \$playerType}) @include(if: \$isVod) { value signature __typename } }',
           'variables': variables,
         }),
       );
@@ -96,14 +113,29 @@ class TwitchGqlApi extends BaseApiClient {
   String buildHlsUrl({
     required String login,
     required PlaybackAccessToken token,
+    PlaybackMode mode = PlaybackMode.frosty,
+    int? randomValue,
+    String? sessionId,
   }) {
-    final random = Random().nextInt(999999);
+    final random = randomValue ?? Random().nextInt(999999);
     final encodedToken = Uri.encodeComponent(token.value);
+
+    if (mode == PlaybackMode.s0undFull) {
+      return 'https://usher.ttvnw.net${mode.usherPath}$login.m3u8'
+          '?player=twitchweb'
+          '&token=$encodedToken'
+          '&sig=${token.signature}'
+          '&allow_audio_only=true'
+          '&allow_source=true'
+          '&playlist_include_framerate=true'
+          '&type=any'
+          '&p=$random';
+    }
 
     // Usher v2 — what the web player and streamlink use today. Same query
     // params and token; the multivariant playlist is standards-compliant
     // (EXT-X-SESSION-DATA + STREAM-INF only, no EXT-X-MEDIA/TWITCH-INFO).
-    return 'https://usher.ttvnw.net/api/v2/channel/hls/$login.m3u8'
+    return 'https://usher.ttvnw.net${mode.usherPath}$login.m3u8'
         '?sig=${token.signature}'
         '&token=$encodedToken'
         '&allow_source=true'
@@ -113,9 +145,51 @@ class TwitchGqlApi extends BaseApiClient {
         '&reassignments_supported=true'
         '&platform=web'
         '&player_backend=mediaplayer'
-        '&play_session_id=${_randomSessionId()}'
+        '&play_session_id=${sessionId ?? _randomSessionId()}'
         '&playlist_include_framerate=true'
         '&p=$random';
+  }
+
+  /// Fetches the master playlist once so diagnostics can report the actual
+  /// HTTP status and variant count before handing the same URL to the player.
+  /// A separate client is intentional: the app-wide debug interceptor prints
+  /// full URLs, which would expose the playback token and signature.
+  Future<PlaylistProbeResult> probeMasterPlaylist(String url) async {
+    final client = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 15),
+        validateStatus: (_) => true,
+      ),
+    );
+    try {
+      final response = await client.get<String>(
+        url,
+        options: Options(
+          headers: playbackHttpHeaders,
+          responseType: ResponseType.plain,
+        ),
+      );
+      final body = response.data ?? '';
+      return PlaylistProbeResult(
+        statusCode: response.statusCode,
+        variantCount: RegExp(
+          r'^#EXT-X-STREAM-INF:',
+          multiLine: true,
+        ).allMatches(body).length,
+        error: response.statusCode != null && response.statusCode! >= 400
+            ? 'HTTP ${response.statusCode}'
+            : null,
+      );
+    } catch (error) {
+      return PlaylistProbeResult(
+        statusCode: error is DioException ? error.response?.statusCode : null,
+        variantCount: 0,
+        error: error.runtimeType.toString(),
+      );
+    } finally {
+      client.close(force: true);
+    }
   }
 
   /// 32-char hex play-session id, matching the web client and streamlink. Sent
